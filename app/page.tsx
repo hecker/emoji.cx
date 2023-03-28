@@ -11,18 +11,10 @@ interface Emoji {
 }
 
 // Define a function to find the description of a given emoji
-
 const getEmojiDescription = (emoji: string): string => {
   const result = emojis.emojis.find((e: any) => e.emoji === emoji);
   return result?.description || "undefined";
 };
-
-// const getEmojiDescription = (emojiChar: string): string | undefined => {
-//   const emojiData: Emoji | undefined = emojis.find(
-//     (e: Emoji) => e.emoji === emojiChar
-//   );
-//   return emojiData ? emojiData.description : undefined;
-// };
 
 export default function HomePage() {
   const [text, setText] = useState("");
@@ -37,7 +29,7 @@ export default function HomePage() {
     event.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch("https://emoji.cx/api/emoji", {
+    const response = await fetch("/api/emoji", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
