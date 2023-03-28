@@ -37,7 +37,7 @@ export default function HomePage() {
     event.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch("/api/emoji", {
+    const response = await fetch("https://emoji.cx/api/emoji", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
