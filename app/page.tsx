@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import emojis from "lib/emojis.json";
 import copy from "copy-to-clipboard";
 
@@ -20,6 +20,12 @@ export default function HomePage() {
   const [text, setText] = useState("");
   const [emoji, setEmoji] = useState(null as Emoji | null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    textAreaRef.current?.focus();
+  }, []);
 
   const handleCopy = (text: string) => {
     copy(text);
@@ -54,6 +60,7 @@ export default function HomePage() {
           Text:
         </label>
         <textarea
+          ref={textAreaRef}
           id="text"
           className="w-full p-2 border border-gray-300 rounded"
           value={text}
