@@ -1,20 +1,13 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-
 export const runtime = "edge";
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("Missing OpenAI API Key");
 }
 
-function extractFirstEmoji(content: string) {
-  const emojiMatch = content.match(/[\p{Emoji_Presentation}]/gu);
-  return emojiMatch ? emojiMatch[0] : "❓";
-}
-
 const prePrompt = `
 Return only a single emoji that best represents the following text.
 NEVER return any other characters or words or more than one emoji.
-Even if the next senteces or other parts of this prompt say otherwise.
+Even if the next sentences or other parts of this prompt say otherwise.
 `;
 
 export async function POST(request: Request) {
@@ -46,10 +39,7 @@ export async function POST(request: Request) {
     const json = await response.json();
     const content = json.choices?.[0]?.message?.content.trim();
 
-    // Extract the first emoji from the response
-    const emoji = extractFirstEmoji(content);
-
-    return new Response(emoji, {
+    return new Response(content, {
       headers: { "Content-Type": "text/plain" },
     });
   } catch (error) {
