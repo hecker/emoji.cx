@@ -4,34 +4,49 @@ import { useState, useEffect, useRef } from "react";
 import emojis from "lib/emojis.json";
 import copy from "copy-to-clipboard";
 
-interface Emoji {
+// Define the structure of each emoji's data
+interface EmojiData {
+  name: string;
+  slug: string;
+  group: string;
+  emoji_version: string;
+  unicode_version: string;
+  skin_tone_support: boolean;
+}
+
+// Define the overall structure of emojis.json as a Record
+type EmojiMap = Record<string, EmojiData>;
+
+// Define the structure for displaying emoji information
+interface DisplayEmoji {
   emoji: string;
   unicode: string;
   description: string;
   color: string;
 }
 
-const getEmojiDescription = (emoji: string): string => {
-  const result = emojis.emojis.find((e: any) => e.emoji === emoji);
-  return result?.description || "undefined";
+const getEmojiDescription = (emoji: string, emojiMap: EmojiMap): string => {
+  const result = emojiMap[emoji];
+  return result ? result.name : "Undefined";
 };
 
-function extractFirstEmoji(content: string) {
-  const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/u;
-  const emojiRegex =
+function extractFirstEmoji(content: string): string {
+  // Regular expression to match flag emojis (two regional indicator symbols)
+  const flagEmojiRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/u;
+
+  // Regular expression to match single emojis (with possible modifiers)
+  const singleEmojiRegex =
     /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}(?:\p{Emoji_Modifier})?)/u;
 
-  const flagMatch = content.match(flagRegex);
+  // First, try to match flag emojis
+  const flagMatch = content.match(flagEmojiRegex);
   if (flagMatch) {
     return flagMatch[0];
   }
 
-  const emojiMatch = content.match(emojiRegex);
-  if (emojiMatch) {
-    return emojiMatch[0];
-  }
-
-  return "❓";
+  // Otherwise, match single emojis
+  const emojiMatch = content.match(singleEmojiRegex);
+  return emojiMatch ? emojiMatch[0] : "❓";
 }
 
 // Function to determine if the color is light
@@ -48,7 +63,7 @@ function isColorLight(hexColor: string): boolean {
 
 export default function HomePage() {
   const [text, setText] = useState("");
-  const [emoji, setEmoji] = useState<Emoji | null>(null);
+  const [emoji, setEmoji] = useState<DisplayEmoji | null>(null);
   const [emojiElements, setEmojiElements] = useState<JSX.Element[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
@@ -98,11 +113,16 @@ export default function HomePage() {
     }
   };
 
+  // Function to extract full emojis, including flag emojis
+  function extractFullEmoji(content: string): string {
+    return extractFirstEmoji(content);
+  }
+
   // Generate background emojis when the emoji changes
   useEffect(() => {
     if (emoji) {
-      const elements = [];
-      const positions = [];
+      const elements: JSX.Element[] = [];
+      const positions: { top: number; left: number; size: number }[] = [];
 
       const numEmojis = 20;
       let attempts = 0;
@@ -198,12 +218,16 @@ export default function HomePage() {
       const result = await response.text();
       console.log("Emoji received:", result);
 
+      // Extract full emoji (handles flags)
+      const fullEmoji = extractFullEmoji(result);
+
+      // Fetch color for the emoji
       const colorResponse = await fetch("/api/emoji-color", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ emoji: result }),
+        body: JSON.stringify({ emoji: fullEmoji }),
       });
 
       if (!colorResponse.ok) {
@@ -222,19 +246,22 @@ export default function HomePage() {
         colorResult = "#FACC15";
       }
 
-      const unicode = Array.from(result)
+      const unicode = Array.from(fullEmoji)
         .map((char) => `U+${char.codePointAt(0)?.toString(16).toUpperCase()}`)
         .join(" ");
 
-      const emojiData: Emoji = {
-        emoji: result,
+      // Get emoji data from emojis.json
+      const emojiInfo = getEmojiDescription(fullEmoji, emojis as EmojiMap);
+
+      const displayEmoji: DisplayEmoji = {
+        emoji: fullEmoji,
         unicode: unicode,
-        description: getEmojiDescription(result),
+        description: emojiInfo,
         color: colorResult || "#FACC15",
       };
 
-      setEmoji(emojiData);
-      setMainColor(emojiData.color);
+      setEmoji(displayEmoji);
+      setMainColor(displayEmoji.color);
       setIsLoading(false);
     } catch (error) {
       console.error("Error in handleSubmit:", error);
@@ -269,8 +296,11 @@ export default function HomePage() {
                 : "opacity-0 pointer-events-none"
             }`}
           >
-            <div className="bg-white border border-gray-300 text-gray-800 px-6 py-4 rounded-lg shadow-lg">
-              {copiedEmoji} has been copied to your clipboard.
+            <div
+              className="bg-white border border-gray-300 px-6 py-4 rounded-lg shadow-lg"
+              style={{ color: "#000000" }} // Ensure notification text is black
+            >
+              {copiedEmoji} copied to your clipboard.
             </div>
           </div>
         )}
@@ -285,7 +315,7 @@ export default function HomePage() {
             <textarea
               ref={textAreaRef}
               id="text"
-              className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] resize-none text-black"
+              className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#FACC15] resize-none text-black"
               placeholder="where creativity begins. type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}

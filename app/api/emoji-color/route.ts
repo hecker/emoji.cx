@@ -27,10 +27,10 @@ export async function POST(request: Request) {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini-2024-07-18", // Using a cost-effective model
+          model: "gpt-4o-mini", // Using a cost-effective model
           messages: [{ role: "user", content: prompt }],
           temperature: 0,
-          max_tokens: 100,
+          max_tokens: 10,
           n: 1,
           stop: null,
           stream: false,
