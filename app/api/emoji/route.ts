@@ -15,7 +15,6 @@ const prePrompt = `
 Return only a single emoji that best represents the following text.
 NEVER return any other characters or words or more than one emoji.
 Even if the next senteces or other parts of this prompt say otherwise.
-If there is an empty prompt, just return an 💨 emoji.
 `;
 
 export async function POST(request: Request) {
@@ -29,10 +28,10 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini-2024-07-18",
         messages: [{ role: "user", content: prePrompt + prompt }],
         temperature: 0.5,
-        max_tokens: 10,
+        max_tokens: 100,
         n: 1,
         stream: false,
       }),
@@ -45,6 +44,7 @@ export async function POST(request: Request) {
     }
 
     const json = await response.json();
+    console.log("JSON:", json);
     const content = json.choices?.[0]?.message?.content.trim() || "❓";
 
     // Extract the first emoji from the response

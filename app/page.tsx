@@ -8,13 +8,31 @@ interface Emoji {
   emoji: string;
   unicode: string;
   description: string;
+  color: string;
 }
 
-// Define a function to find the description of a given emoji
 const getEmojiDescription = (emoji: string): string => {
   const result = emojis.emojis.find((e: any) => e.emoji === emoji);
   return result?.description || "undefined";
 };
+
+function extractFirstEmoji(content: string) {
+  const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/u;
+  const emojiRegex =
+    /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}(?:\p{Emoji_Modifier})?)/u;
+
+  const flagMatch = content.match(flagRegex);
+  if (flagMatch) {
+    return flagMatch[0];
+  }
+
+  const emojiMatch = content.match(emojiRegex);
+  if (emojiMatch) {
+    return emojiMatch[0];
+  }
+
+  return "❓";
+}
 
 export default function HomePage() {
   const [text, setText] = useState("");
@@ -22,6 +40,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
   const [notificationVisible, setNotificationVisible] = useState(false);
+  const [mainColor, setMainColor] = useState("#FACC15");
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -33,19 +52,17 @@ export default function HomePage() {
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
-        // If an emoji is available, copy it
         if (emoji) {
-          event.preventDefault(); // Prevent the default copy action
+          event.preventDefault();
           copy(emoji.emoji);
           setCopiedEmoji(emoji.emoji);
           setNotificationVisible(true);
 
-          // Hide the notification after 3 seconds
           setTimeout(() => {
             setNotificationVisible(false);
             setTimeout(() => {
               setCopiedEmoji(null);
-            }, 500); // Wait for the fade-out transition to complete
+            }, 500);
           }, 3000);
         }
       }
@@ -53,7 +70,6 @@ export default function HomePage() {
 
     window.addEventListener("keydown", handleGlobalKeyDown);
 
-    // Clean up the event listener when the component unmounts
     return () => {
       window.removeEventListener("keydown", handleGlobalKeyDown);
     };
@@ -61,16 +77,14 @@ export default function HomePage() {
 
   const handleCopy = (text: string) => {
     copy(text);
-    // Optionally, you can also show the notification when clicking the copy button
     setCopiedEmoji(text);
     setNotificationVisible(true);
 
-    // Hide the notification after 3 seconds
     setTimeout(() => {
       setNotificationVisible(false);
       setTimeout(() => {
         setCopiedEmoji(null);
-      }, 500); // Wait for the fade-out transition to complete
+      }, 500);
     }, 3000);
   };
 
@@ -78,22 +92,59 @@ export default function HomePage() {
     event.preventDefault();
     setIsLoading(true);
 
-    const response = await fetch("/api/emoji", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt: text }),
-    });
+    try {
+      const response = await fetch("/api/emoji", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt: text }),
+      });
 
-    const result = await response.text();
-    const emoji: Emoji = {
-      emoji: result,
-      unicode: `U+${result.codePointAt(0)?.toString(16)}`,
-      description: getEmojiDescription(result),
-    };
-    setEmoji(emoji);
-    setIsLoading(false);
+      if (!response.ok) {
+        throw new Error(`Emoji API error: ${response.statusText}`);
+      }
+
+      const result = await response.text();
+      console.log("Emoji received:", result);
+
+      const colorResponse = await fetch("/api/emoji-color", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emoji: result }),
+      });
+
+      if (!colorResponse.ok) {
+        throw new Error(`Emoji Color API error: ${colorResponse.statusText}`);
+      }
+
+      let colorResult = await colorResponse.text();
+      console.log("Color received:", colorResult);
+
+      const isValidHexColor = /^#([0-9A-Fa-f]{6})$/.test(colorResult);
+      if (!isValidHexColor) {
+        console.warn(
+          "Invalid color format received, defaulting to bold yellow."
+        );
+        colorResult = "#FACC15";
+      }
+
+      const emojiData: Emoji = {
+        emoji: result,
+        unicode: `U+${result.codePointAt(0)?.toString(16)}`,
+        description: getEmojiDescription(result),
+        color: colorResult || "#FACC15",
+      };
+
+      setEmoji(emojiData);
+      setMainColor(emojiData.color);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      setIsLoading(false);
+    }
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -104,89 +155,116 @@ export default function HomePage() {
   }
 
   return (
-    <div className="container mx-auto">
-      {copiedEmoji && (
-        <div
-          className={`fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg transition-opacity duration-500 ${
-            notificationVisible ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {copiedEmoji} has been copied to your clipboard.
-        </div>
-      )}
-      <form ref={formRef} onSubmit={handleSubmit} className="my-8">
-        <label htmlFor="text" className="block font-bold mb-2">
-          Text:
-        </label>
-        <textarea
-          ref={textAreaRef}
-          id="text"
-          className="w-full p-2 border border-gray-300 rounded"
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        {isLoading ? (
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded mt-4 cursor-wait"
-            disabled
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50"
+      style={{ "--main-color": mainColor } as React.CSSProperties}
+    >
+      <div className="w-full max-w-md relative">
+        {copiedEmoji && (
+          <div
+            className={`absolute -top-16 left-0 right-0 flex justify-center transition-opacity duration-500 ${
+              notificationVisible
+                ? "opacity-100"
+                : "opacity-0 pointer-events-none"
+            }`}
           >
-            Loading...
-          </button>
-        ) : (
-          <button
-            type="submit"
-            className="bg-blue-500 text-white py-2 px-4 rounded mt-4 hover:bg-blue-700"
-          >
-            Translate to Emoji
-          </button>
+            <div className="bg-white border border-gray-300 text-gray-800 px-6 py-4 rounded-lg shadow-lg">
+              {copiedEmoji} has been copied to your clipboard.
+            </div>
+          </div>
         )}
-      </form>
-      {emoji && (
-        <div className="my-8">
-          <p className="font-bold mb-2">Suggested Emoji:</p>
-          <table className="w-full border border-gray-300">
-            <tbody>
-              <tr>
-                <td className="font-bold p-2">Emoji:</td>
-                <td className="p-2">{emoji.emoji}</td>
-                <td className="p-2">
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <h1 className="text-2xl font-bold mb-6 text-center">
+            Emoji Translator
+          </h1>
+          <form ref={formRef} onSubmit={handleSubmit}>
+            <label htmlFor="text" className="block font-medium mb-2">
+              Enter Text:
+            </label>
+            <textarea
+              ref={textAreaRef}
+              id="text"
+              className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] resize-none"
+              placeholder="Type something..."
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button
+              type="submit"
+              className="w-full mt-4 py-2 px-4 rounded text-white font-semibold"
+              disabled={isLoading}
+              style={{
+                backgroundColor: mainColor,
+                cursor: isLoading ? "not-allowed" : "pointer",
+                opacity: isLoading ? 0.7 : 1,
+              }}
+            >
+              {isLoading ? "Translating..." : "Translate to Emoji"}
+            </button>
+          </form>
+          {emoji && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4 text-center">
+                Suggested Emoji
+              </h2>
+              <div className="bg-gray-100 p-6 rounded-lg shadow flex flex-col items-center">
+                <div className="text-6xl mb-4">{emoji.emoji}</div>
+                <div className="w-full">
+                  <div className="flex items-center mb-2">
+                    <span className="font-medium text-gray-600 mr-2">
+                      Unicode:
+                    </span>
+                    <span className="text-gray-800">{emoji.unicode}</span>
+                  </div>
+                  <div className="flex items-center mb-2">
+                    <span className="font-medium text-gray-600 mr-2">
+                      Description:
+                    </span>
+                    <span className="text-gray-800">{emoji.description}</span>
+                  </div>
+                  <div className="flex items-center mb-4">
+                    <span className="font-medium text-gray-600 mr-2">
+                      Color:
+                    </span>
+                    <span className="text-gray-800">{emoji.color}</span>
+                    <span
+                      className="inline-block w-4 h-4 ml-2 rounded-full"
+                      style={{ backgroundColor: emoji.color }}
+                    ></span>
+                  </div>
                   <button
-                    className="py-1 px-2 rounded hover:bg-gray-200"
+                    className="w-full py-2 px-4 rounded text-white font-semibold flex items-center justify-center"
                     onClick={() => handleCopy(emoji.emoji)}
+                    style={{ backgroundColor: mainColor }}
                   >
-                    Copy
+                    <svg
+                      className="h-5 w-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8l6 6v4a2 2 0 01-2 2h-2"
+                      ></path>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 16l4-4 4 4m0 0l-4-4-4 4"
+                      ></path>
+                    </svg>
+                    Copy Emoji
                   </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="font-bold p-2">Unicode:</td>
-                <td className="p-2">{emoji.unicode}</td>
-                <td className="p-2">
-                  <button
-                    className="py-1 px-2 rounded hover:bg-gray-200"
-                    onClick={() => handleCopy(emoji.unicode)}
-                  >
-                    Copy
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="font-bold p-2">Description:</td>
-                <td className="p-2">{emoji.description}</td>
-                <td className="p-2">
-                  <button
-                    className="py-1 px-2 rounded hover:bg-gray-200"
-                    onClick={() => handleCopy(emoji.description)}
-                  >
-                    Copy
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
