@@ -22,6 +22,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     textAreaRef.current?.focus();
@@ -53,9 +54,16 @@ export default function HomePage() {
     setIsLoading(false);
   }
 
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      formRef.current?.requestSubmit();
+    }
+  }
+
   return (
     <div className="container mx-auto">
-      <form onSubmit={handleSubmit} className="my-8">
+      <form ref={formRef} onSubmit={handleSubmit} className="my-8">
         <label htmlFor="text" className="block font-bold mb-2">
           Text:
         </label>
@@ -65,6 +73,7 @@ export default function HomePage() {
           className="w-full p-2 border border-gray-300 rounded"
           value={text}
           onChange={(event) => setText(event.target.value)}
+          onKeyDown={handleKeyDown}
         />
         {isLoading ? (
           <button
