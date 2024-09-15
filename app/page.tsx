@@ -315,7 +315,7 @@ export default function HomePage() {
             <textarea
               ref={textAreaRef}
               id="text"
-              className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#FACC15] resize-none text-black"
+              className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none`}
               placeholder="where creativity begins. type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}
