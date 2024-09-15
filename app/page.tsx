@@ -178,26 +178,22 @@ export default function HomePage() {
 
       // Handle the default "❓" emoji case
       let colorResult;
-      if (result === "❓") {
-        colorResult = "#6B7280"; // Gray color for the "❓" emoji
-        console.log("Color set for ❓ emoji:", colorResult);
-      } else {
-        const colorResponse = await fetch("/api/emoji-color", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ emoji: result }),
-        });
 
-        if (!colorResponse.ok) {
-          throw new Error(`Emoji Color API error: ${colorResponse.statusText}`);
-        }
+      const colorResponse = await fetch("/api/emoji-color", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emoji: result }),
+      });
 
-        colorResult = await colorResponse.text();
-        colorResult = colorResult.trim();
-        console.log("Color received from OpenAI:", colorResult);
+      if (!colorResponse.ok) {
+        throw new Error(`Emoji Color API error: ${colorResponse.statusText}`);
       }
+
+      colorResult = await colorResponse.text();
+      colorResult = colorResult.trim();
+      console.log("Color received from OpenAI:", colorResult);
 
       const isValidHexColor = /^#([0-9A-Fa-f]{6})$/.test(colorResult);
       if (!isValidHexColor) {
@@ -260,18 +256,16 @@ export default function HomePage() {
           </div>
         )}
         <div className="bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold mb-6 text-center">
-            Emoji Translator
-          </h1>
+          <h1 className="text-2xl font-bold mb-6 text-center">text to emoji</h1>
           <form ref={formRef} onSubmit={handleSubmit}>
             <label htmlFor="text" className="block font-medium mb-2">
-              Enter Text:
+              enter text:
             </label>
             <textarea
               ref={textAreaRef}
               id="text"
               className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] resize-none"
-              placeholder="Type something..."
+              placeholder="where creativity begins. type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={handleKeyDown}
@@ -308,32 +302,32 @@ export default function HomePage() {
                   ></path>
                 </svg>
               )}
-              {isLoading ? "Translating..." : "Translate to Emoji"}
+              {isLoading ? "generating..." : "generate emoji"}
             </button>
           </form>
           {emoji && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4 text-center">
-                Suggested Emoji
+                how do you like this one?
               </h2>
               <div className="bg-gray-100 p-6 rounded-lg shadow flex flex-col items-center">
                 <div className="text-6xl mb-4">{emoji.emoji}</div>
                 <div className="w-full">
                   <div className="flex items-center mb-2">
                     <span className="font-medium text-gray-600 mr-2">
-                      Unicode:
+                      unicode:
                     </span>
                     <span className="text-gray-800">{emoji.unicode}</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <span className="font-medium text-gray-600 mr-2">
-                      Description:
+                      description:
                     </span>
                     <span className="text-gray-800">{emoji.description}</span>
                   </div>
                   <div className="flex items-center mb-4">
                     <span className="font-medium text-gray-600 mr-2">
-                      Color:
+                      color:
                     </span>
                     <span className="text-gray-800">{emoji.color}</span>
                     <span
@@ -365,7 +359,7 @@ export default function HomePage() {
                         d="M8 16l4-4 4 4m0 0l-4-4-4 4"
                       ></path>
                     </svg>
-                    Copy Emoji
+                    copy emoji
                   </button>
                 </div>
               </div>

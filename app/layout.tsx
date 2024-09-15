@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "emoji.cx",
-  description: "🤓 Text to Emoji, based on AI.",
+  description: "😁 text to emoji",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon-32x32.png",
