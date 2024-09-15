@@ -18,8 +18,10 @@ const getEmojiDescription = (emoji: string): string => {
 
 export default function HomePage() {
   const [text, setText] = useState("");
-  const [emoji, setEmoji] = useState(null as Emoji | null);
+  const [emoji, setEmoji] = useState<Emoji | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
+  const [notificationVisible, setNotificationVisible] = useState(false);
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -28,8 +30,48 @@ export default function HomePage() {
     textAreaRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
+        // If an emoji is available, copy it
+        if (emoji) {
+          event.preventDefault(); // Prevent the default copy action
+          copy(emoji.emoji);
+          setCopiedEmoji(emoji.emoji);
+          setNotificationVisible(true);
+
+          // Hide the notification after 3 seconds
+          setTimeout(() => {
+            setNotificationVisible(false);
+            setTimeout(() => {
+              setCopiedEmoji(null);
+            }, 500); // Wait for the fade-out transition to complete
+          }, 3000);
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+
+    // Clean up the event listener when the component unmounts
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown);
+    };
+  }, [emoji]);
+
   const handleCopy = (text: string) => {
     copy(text);
+    // Optionally, you can also show the notification when clicking the copy button
+    setCopiedEmoji(text);
+    setNotificationVisible(true);
+
+    // Hide the notification after 3 seconds
+    setTimeout(() => {
+      setNotificationVisible(false);
+      setTimeout(() => {
+        setCopiedEmoji(null);
+      }, 500); // Wait for the fade-out transition to complete
+    }, 3000);
   };
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -63,6 +105,15 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto">
+      {copiedEmoji && (
+        <div
+          className={`fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg transition-opacity duration-500 ${
+            notificationVisible ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          {copiedEmoji} has been copied to your clipboard.
+        </div>
+      )}
       <form ref={formRef} onSubmit={handleSubmit} className="my-8">
         <label htmlFor="text" className="block font-bold mb-2">
           Text:
