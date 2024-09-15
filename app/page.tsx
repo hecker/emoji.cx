@@ -37,6 +37,7 @@ function extractFirstEmoji(content: string) {
 export default function HomePage() {
   const [text, setText] = useState("");
   const [emoji, setEmoji] = useState<Emoji | null>(null);
+  const [emojiElements, setEmojiElements] = useState<JSX.Element[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
   const [notificationVisible, setNotificationVisible] = useState(false);
@@ -54,16 +55,7 @@ export default function HomePage() {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
         if (emoji) {
           event.preventDefault();
-          copy(emoji.emoji);
-          setCopiedEmoji(emoji.emoji);
-          setNotificationVisible(true);
-
-          setTimeout(() => {
-            setNotificationVisible(false);
-            setTimeout(() => {
-              setCopiedEmoji(null);
-            }, 500);
-          }, 3000);
+          handleCopy(emoji.emoji);
         }
       }
     }
@@ -76,17 +68,93 @@ export default function HomePage() {
   }, [emoji]);
 
   const handleCopy = (text: string) => {
-    copy(text);
-    setCopiedEmoji(text);
-    setNotificationVisible(true);
+    try {
+      copy(text);
+      setCopiedEmoji(text);
+      setNotificationVisible(true);
 
-    setTimeout(() => {
-      setNotificationVisible(false);
       setTimeout(() => {
-        setCopiedEmoji(null);
-      }, 500);
-    }, 3000);
+        setNotificationVisible(false);
+        setTimeout(() => {
+          setCopiedEmoji(null);
+        }, 500);
+      }, 3000);
+    } catch (error) {
+      console.error("Copy failed:", error);
+      alert("Failed to copy emoji to clipboard.");
+    }
   };
+
+  // Generate background emojis when the emoji changes
+  useEffect(() => {
+    if (emoji) {
+      const elements = [];
+      const positions = [];
+
+      const numEmojis = 20;
+      let attempts = 0;
+
+      while (elements.length < numEmojis && attempts < numEmojis * 10) {
+        attempts++;
+
+        const size = Math.floor(Math.random() * 80) + 20; // Size between 20px and 100px
+        const top = Math.random() * (100 - (size / window.innerHeight) * 100);
+        const left = Math.random() * (100 - (size / window.innerWidth) * 100);
+        const rotate = Math.floor(Math.random() * 360);
+        const opacity = Math.random() * 0.2 + 0.1;
+
+        const newEmoji = {
+          top,
+          left,
+          size,
+        };
+
+        // Check for overlap
+        let overlapping = false;
+        for (const pos of positions) {
+          const dx =
+            ((pos.left - newEmoji.left) / 100) * window.innerWidth +
+            (pos.size - newEmoji.size) / 2;
+          const dy =
+            ((pos.top - newEmoji.top) / 100) * window.innerHeight +
+            (pos.size - newEmoji.size) / 2;
+          const distance = Math.hypot(dx, dy);
+          if (distance < (pos.size + newEmoji.size) / 2) {
+            overlapping = true;
+            break;
+          }
+        }
+
+        if (!overlapping) {
+          positions.push(newEmoji);
+
+          elements.push(
+            <span
+              key={elements.length}
+              className="emoji-background"
+              style={{
+                position: "absolute",
+                top: `${newEmoji.top}%`,
+                left: `${newEmoji.left}%`,
+                fontSize: `${newEmoji.size}px`,
+                transform: `rotate(${rotate}deg)`,
+                opacity: opacity,
+                userSelect: "none",
+                pointerEvents: "none",
+              }}
+            >
+              {emoji.emoji}
+            </span>
+          );
+        }
+      }
+
+      setEmojiElements(elements);
+    } else {
+      // If no emoji is selected, clear the background
+      setEmojiElements([]);
+    }
+  }, [emoji]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,20 +176,28 @@ export default function HomePage() {
       const result = await response.text();
       console.log("Emoji received:", result);
 
-      const colorResponse = await fetch("/api/emoji-color", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ emoji: result }),
-      });
+      // Handle the default "❓" emoji case
+      let colorResult;
+      if (result === "❓") {
+        colorResult = "#6B7280"; // Gray color for the "❓" emoji
+        console.log("Color set for ❓ emoji:", colorResult);
+      } else {
+        const colorResponse = await fetch("/api/emoji-color", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ emoji: result }),
+        });
 
-      if (!colorResponse.ok) {
-        throw new Error(`Emoji Color API error: ${colorResponse.statusText}`);
+        if (!colorResponse.ok) {
+          throw new Error(`Emoji Color API error: ${colorResponse.statusText}`);
+        }
+
+        colorResult = await colorResponse.text();
+        colorResult = colorResult.trim();
+        console.log("Color received from OpenAI:", colorResult);
       }
-
-      let colorResult = await colorResponse.text();
-      console.log("Color received:", colorResult);
 
       const isValidHexColor = /^#([0-9A-Fa-f]{6})$/.test(colorResult);
       if (!isValidHexColor) {
@@ -131,9 +207,13 @@ export default function HomePage() {
         colorResult = "#FACC15";
       }
 
+      const unicode = Array.from(result)
+        .map((char) => `U+${char.codePointAt(0)?.toString(16).toUpperCase()}`)
+        .join(" ");
+
       const emojiData: Emoji = {
         emoji: result,
-        unicode: `U+${result.codePointAt(0)?.toString(16)}`,
+        unicode: unicode,
         description: getEmojiDescription(result),
         color: colorResult || "#FACC15",
       };
@@ -143,6 +223,9 @@ export default function HomePage() {
       setIsLoading(false);
     } catch (error) {
       console.error("Error in handleSubmit:", error);
+      alert(
+        "An error occurred while processing your request. Please try again."
+      );
       setIsLoading(false);
     }
   }
@@ -156,10 +239,13 @@ export default function HomePage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-gray-50"
+      className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden"
       style={{ "--main-color": mainColor } as React.CSSProperties}
     >
-      <div className="w-full max-w-md relative">
+      {/* Background Emojis */}
+      <div className="hidden md:block absolute inset-0">{emojiElements}</div>
+
+      <div className="w-full max-w-md relative z-10">
         {copiedEmoji && (
           <div
             className={`absolute -top-16 left-0 right-0 flex justify-center transition-opacity duration-500 ${
@@ -192,7 +278,7 @@ export default function HomePage() {
             />
             <button
               type="submit"
-              className="w-full mt-4 py-2 px-4 rounded text-white font-semibold"
+              className="w-full mt-4 py-2 px-4 rounded text-white font-semibold flex items-center justify-center"
               disabled={isLoading}
               style={{
                 backgroundColor: mainColor,
@@ -200,6 +286,28 @@ export default function HomePage() {
                 opacity: isLoading ? 0.7 : 1,
               }}
             >
+              {isLoading && (
+                <svg
+                  className="animate-spin h-5 w-5 mr-2 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  ></path>
+                </svg>
+              )}
               {isLoading ? "Translating..." : "Translate to Emoji"}
             </button>
           </form>

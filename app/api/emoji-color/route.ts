@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const prompt = `
     Return the most dominant color of the following emoji in hexadecimal RGB format (e.g., #FFFFFF for white).
     Only return the hexadecimal color code and nothing else.
-    If you cannot determine the color, return #FDE68A.
+    If you cannot determine the color, return #000000.
     Emoji: ${emoji}
     `;
 
@@ -46,13 +46,13 @@ export async function POST(request: Request) {
     }
 
     const json = await openAiResponse.json();
-    let color = json.choices?.[0]?.message?.content.trim() || "#FDE68A";
+    let color = json.choices?.[0]?.message?.content.trim();
     console.log("Color from OpenAI:", color); // Log the color received from OpenAI
 
     // Validate the color format (should be a hex code)
     if (!/^#([0-9A-Fa-f]{6})$/.test(color)) {
       console.warn("Invalid color format received, defaulting to yellow.");
-      color = "#FDE68A"; // Default to yellow if invalid
+      color = "#000000"; // Default to yellow if invalid
     }
 
     // Create a response with caching headers

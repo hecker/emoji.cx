@@ -44,8 +44,7 @@ export async function POST(request: Request) {
     }
 
     const json = await response.json();
-    console.log("JSON:", json);
-    const content = json.choices?.[0]?.message?.content.trim() || "❓";
+    const content = json.choices?.[0]?.message?.content.trim();
 
     // Extract the first emoji from the response
     const emoji = extractFirstEmoji(content);
