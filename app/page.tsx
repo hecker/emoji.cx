@@ -34,6 +34,18 @@ function extractFirstEmoji(content: string) {
   return "❓";
 }
 
+// Function to determine if the color is light
+function isColorLight(hexColor: string): boolean {
+  hexColor = hexColor.replace("#", "");
+
+  const r = parseInt(hexColor.substr(0, 2), 16) / 255;
+  const g = parseInt(hexColor.substr(2, 2), 16) / 255;
+  const b = parseInt(hexColor.substr(4, 2), 16) / 255;
+
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.7; // Adjust threshold if needed
+}
+
 export default function HomePage() {
   const [text, setText] = useState("");
   const [emoji, setEmoji] = useState<Emoji | null>(null);
@@ -42,6 +54,7 @@ export default function HomePage() {
   const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [mainColor, setMainColor] = useState("#FACC15");
+  const [textColor, setTextColor] = useState("#000000"); // Set default text color to black
 
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -156,6 +169,15 @@ export default function HomePage() {
     }
   }, [emoji]);
 
+  // Update text color based on mainColor
+  useEffect(() => {
+    if (isColorLight(mainColor)) {
+      setTextColor("#000000"); // Black text for light colors
+    } else {
+      setTextColor("#FFFFFF"); // White text for dark colors
+    }
+  }, [mainColor]);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
@@ -176,9 +198,6 @@ export default function HomePage() {
       const result = await response.text();
       console.log("Emoji received:", result);
 
-      // Handle the default "❓" emoji case
-      let colorResult;
-
       const colorResponse = await fetch("/api/emoji-color", {
         method: "POST",
         headers: {
@@ -191,9 +210,9 @@ export default function HomePage() {
         throw new Error(`Emoji Color API error: ${colorResponse.statusText}`);
       }
 
-      colorResult = await colorResponse.text();
+      let colorResult = await colorResponse.text();
       colorResult = colorResult.trim();
-      console.log("Color received from OpenAI:", colorResult);
+      console.log("Color received:", colorResult);
 
       const isValidHexColor = /^#([0-9A-Fa-f]{6})$/.test(colorResult);
       if (!isValidHexColor) {
@@ -234,14 +253,14 @@ export default function HomePage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden"
-      style={{ "--main-color": mainColor } as React.CSSProperties}
-    >
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 relative overflow-hidden">
       {/* Background Emojis */}
       <div className="hidden md:block absolute inset-0">{emojiElements}</div>
 
-      <div className="w-full max-w-md relative z-10">
+      <div
+        className="w-full max-w-md relative z-10"
+        style={{ color: textColor }}
+      >
         {copiedEmoji && (
           <div
             className={`absolute -top-16 left-0 right-0 flex justify-center transition-opacity duration-500 ${
@@ -256,15 +275,17 @@ export default function HomePage() {
           </div>
         )}
         <div className="bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold mb-6 text-center">text to emoji</h1>
+          <h1 className="text-2xl font-bold mb-6 text-center text-black">
+            text to emoji
+          </h1>
           <form ref={formRef} onSubmit={handleSubmit}>
-            <label htmlFor="text" className="block font-medium mb-2">
+            <label htmlFor="text" className="block font-medium mb-2 text-black">
               enter text:
             </label>
             <textarea
               ref={textAreaRef}
               id="text"
-              className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] resize-none"
+              className="w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[var(--main-color)] resize-none text-black"
               placeholder="where creativity begins. type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -276,16 +297,18 @@ export default function HomePage() {
               disabled={isLoading}
               style={{
                 backgroundColor: mainColor,
+                color: textColor,
                 cursor: isLoading ? "not-allowed" : "pointer",
                 opacity: isLoading ? 0.7 : 1,
               }}
             >
               {isLoading && (
                 <svg
-                  className="animate-spin h-5 w-5 mr-2 text-white"
+                  className="animate-spin h-5 w-5 mr-2"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
+                  style={{ color: textColor }}
                 >
                   <circle
                     className="opacity-25"
@@ -310,7 +333,10 @@ export default function HomePage() {
               <h2 className="text-xl font-semibold mb-4 text-center">
                 how do you like this one?
               </h2>
-              <div className="bg-gray-100 p-6 rounded-lg shadow flex flex-col items-center">
+              <div
+                className="bg-gray-100 p-6 rounded-lg shadow flex flex-col items-center"
+                style={{ color: textColor }}
+              >
                 <div className="text-6xl mb-4">{emoji.emoji}</div>
                 <div className="w-full">
                   <div className="flex items-center mb-2">
@@ -338,7 +364,7 @@ export default function HomePage() {
                   <button
                     className="w-full py-2 px-4 rounded text-white font-semibold flex items-center justify-center"
                     onClick={() => handleCopy(emoji.emoji)}
-                    style={{ backgroundColor: mainColor }}
+                    style={{ backgroundColor: mainColor, color: textColor }}
                   >
                     <svg
                       className="h-5 w-5 mr-2"
@@ -347,6 +373,7 @@ export default function HomePage() {
                       strokeWidth="2"
                       viewBox="0 0 24 24"
                       xmlns="http://www.w3.org/2000/svg"
+                      style={{ color: textColor }}
                     >
                       <path
                         strokeLinecap="round"
