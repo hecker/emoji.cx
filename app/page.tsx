@@ -81,10 +81,12 @@ export default function HomePage() {
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
-        if (emoji) {
+        const selectedText = window.getSelection()?.toString();
+        if (!selectedText && emoji) {
           event.preventDefault();
           handleCopy(emoji.emoji);
         }
+        // If there's selected text, do not intercept the copy event
       }
     }
 
@@ -315,7 +317,7 @@ export default function HomePage() {
             <textarea
               ref={textAreaRef}
               id="text"
-              className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none`}
+              className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none text-black`} // Added 'text-black' here
               placeholder="where creativity begins. type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}
