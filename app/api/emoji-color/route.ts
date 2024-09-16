@@ -12,11 +12,13 @@ export async function POST(request: Request) {
     console.log("Received emoji:", emoji); // Log the received emoji
 
     const prompt = `
-    Return the most dominant color of the following emoji in hexadecimal RGB format (e.g., #FFFFFF for white).
-    Only return the hexadecimal color code and nothing else.
-    If you cannot determine the color, return #000000.
-    Emoji: ${emoji}
-    `;
+You are tasked with determining the most dominant and recognizable color of an emoji, as it is generally perceived across platforms. Consider the following points:
+- Focus on the primary object or element in the emoji.
+- Ignore any variations in platform or background designs; only focus on the intended color of the emoji's central element.
+- Return the color in hexadecimal RGB format (e.g., #FFFFFF for white) without any additional characters.
+- If unsure of the color, return #000000.
+Emoji: ${emoji}
+`;
 
     const openAiResponse = await fetch(
       "https://api.openai.com/v1/chat/completions",
