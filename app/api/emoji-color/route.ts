@@ -15,6 +15,7 @@ export async function POST(request: Request) {
 You are tasked with determining the most dominant and recognizable color of an emoji, as it is generally perceived across platforms. Consider the following points:
 - Focus on the primary object or element in the emoji.
 - Ignore any variations in platform or background designs; only focus on the intended color of the emoji's central element.
+- If the emoji represents an object associated with a typical color (e.g., green for a test tube 🧪), return that color.
 - Return the color in hexadecimal RGB format (e.g., #FFFFFF for white) without any additional characters.
 - If unsure of the color, return #000000.
 Emoji: ${emoji}
