@@ -30,25 +30,6 @@ const getEmojiDescription = (emoji: string, emojiMap: EmojiMap): string => {
   return result ? result.name : "Undefined";
 };
 
-function extractFirstEmoji(content: string): string {
-  // Regular expression to match flag emojis (two regional indicator symbols)
-  const flagEmojiRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/u;
-
-  // Regular expression to match single emojis (with possible modifiers)
-  const singleEmojiRegex =
-    /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji_Modifier_Base}(?:\p{Emoji_Modifier})?)/u;
-
-  // First, try to match flag emojis
-  const flagMatch = content.match(flagEmojiRegex);
-  if (flagMatch) {
-    return flagMatch[0];
-  }
-
-  // Otherwise, match single emojis
-  const emojiMatch = content.match(singleEmojiRegex);
-  return emojiMatch ? emojiMatch[0] : "❓";
-}
-
 // Function to determine if the color is light
 function isColorLight(hexColor: string): boolean {
   hexColor = hexColor.replace("#", "");
@@ -115,10 +96,7 @@ export default function HomePage() {
     }
   };
 
-  // Function to extract full emojis, including flag emojis
-  function extractFullEmoji(content: string): string {
-    return extractFirstEmoji(content);
-  }
+  // Removed extractFullEmoji and extractFirstEmoji functions
 
   // Generate background emojis when the emoji changes
   useEffect(() => {
@@ -220,8 +198,9 @@ export default function HomePage() {
       const result = await response.text();
       console.log("Emoji received:", result);
 
-      // Extract full emoji (handles flags)
-      const fullEmoji = extractFullEmoji(result);
+      // Use the API's result directly
+      const fullEmoji = result.trim();
+      console.log("Full Emoji:", fullEmoji);
 
       // Fetch color for the emoji
       const colorResponse = await fetch("/api/emoji-color", {
@@ -248,17 +227,26 @@ export default function HomePage() {
         colorResult = "#FACC15";
       }
 
+      // Convert the emoji to its Unicode code points
       const unicode = Array.from(fullEmoji)
-        .map((char) => `U+${char.codePointAt(0)?.toString(16).toUpperCase()}`)
+        .map((char) =>
+          char.codePointAt(0) !== undefined
+            ? `U+${char.codePointAt(0)!.toString(16).toUpperCase()}`
+            : ""
+        )
+        .filter(Boolean)
         .join(" ");
+
+      console.log("Unicode:", unicode);
 
       // Get emoji data from emojis.json
       const emojiInfo = getEmojiDescription(fullEmoji, emojis as EmojiMap);
+      console.log("Emoji description:", emojiInfo);
 
       const displayEmoji: DisplayEmoji = {
         emoji: fullEmoji,
-        unicode: unicode,
-        description: emojiInfo,
+        unicode: unicode || "Undefined",
+        description: emojiInfo || "No description available",
         color: colorResult || "#FACC15",
       };
 
@@ -308,17 +296,17 @@ export default function HomePage() {
         )}
         <div className="bg-white p-8 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold mb-6 text-center text-black">
-            text to emoji
+            Text to Emoji
           </h1>
           <form ref={formRef} onSubmit={handleSubmit}>
             <label htmlFor="text" className="block font-medium mb-2 text-black">
-              enter text:
+              Enter text:
             </label>
             <textarea
               ref={textAreaRef}
               id="text"
-              className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none text-black`} // Added 'text-black' here
-              placeholder="where creativity begins. type something..."
+              className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none text-black`}
+              placeholder="Where creativity begins. Type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={handleKeyDown}
@@ -357,13 +345,13 @@ export default function HomePage() {
                   ></path>
                 </svg>
               )}
-              {isLoading ? "generating..." : "generate emoji"}
+              {isLoading ? "Generating..." : "Generate Emoji"}
             </button>
           </form>
           {emoji && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4 text-center">
-                how do you like this one?
+                How do you like this one?
               </h2>
               <div
                 className="bg-gray-100 p-6 rounded-lg shadow flex flex-col items-center"
@@ -373,19 +361,19 @@ export default function HomePage() {
                 <div className="w-full">
                   <div className="flex items-center mb-2">
                     <span className="font-medium text-gray-600 mr-2">
-                      unicode:
+                      Unicode:
                     </span>
                     <span className="text-gray-800">{emoji.unicode}</span>
                   </div>
                   <div className="flex items-center mb-2">
                     <span className="font-medium text-gray-600 mr-2">
-                      description:
+                      Description:
                     </span>
                     <span className="text-gray-800">{emoji.description}</span>
                   </div>
                   <div className="flex items-center mb-4">
                     <span className="font-medium text-gray-600 mr-2">
-                      color:
+                      Color:
                     </span>
                     <span className="text-gray-800">{emoji.color}</span>
                     <span
@@ -418,7 +406,7 @@ export default function HomePage() {
                         d="M8 16l4-4 4 4m0 0l-4-4-4 4"
                       ></path>
                     </svg>
-                    copy emoji
+                    Copy Emoji
                   </button>
                 </div>
               </div>
