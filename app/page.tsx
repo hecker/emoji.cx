@@ -55,8 +55,24 @@ export default function HomePage() {
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Function to detect mobile devices
+  const isMobileDevice = () => {
+    if (typeof navigator === "undefined") return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  };
+
   useEffect(() => {
-    textAreaRef.current?.focus();
+    if (isMobileDevice()) {
+      // Apply a delayed focus for mobile devices
+      const timer = setTimeout(() => {
+        textAreaRef.current?.focus();
+      }, 200); // Adjust the delay as needed (e.g., 500ms)
+
+      return () => clearTimeout(timer);
+    } else {
+      // Immediate focus for desktop devices
+      textAreaRef.current?.focus();
+    }
   }, []);
 
   useEffect(() => {
@@ -95,8 +111,6 @@ export default function HomePage() {
       alert("Failed to copy emoji to clipboard.");
     }
   };
-
-  // Removed extractFullEmoji and extractFirstEmoji functions
 
   // Generate background emojis when the emoji changes
   useEffect(() => {
@@ -305,6 +319,7 @@ export default function HomePage() {
             <textarea
               ref={textAreaRef}
               id="text"
+              // Removed autoFocus attribute
               className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none text-black`}
               placeholder="where creativity begins. type something..."
               value={text}
