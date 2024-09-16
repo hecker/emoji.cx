@@ -6,7 +6,11 @@ module.exports = {
     "./content/**/*.mdx",
   ],
   theme: {
-    extend: {},
+    extend: {
+      borderRadius: {
+        DEFAULT: "4px",
+      },
+    },
   },
   plugins: [],
 };
