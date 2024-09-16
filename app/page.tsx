@@ -290,23 +290,23 @@ export default function HomePage() {
               className="bg-white border border-gray-300 px-6 py-4 rounded-lg shadow-lg"
               style={{ color: "#000000" }} // Ensure notification text is black
             >
-              {copiedEmoji} copied to your clipboard.
+              {copiedEmoji} copied to clipboard.
             </div>
           </div>
         )}
         <div className="bg-white p-8 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold mb-6 text-center text-black">
-            Text to Emoji
+            text to emoji
           </h1>
           <form ref={formRef} onSubmit={handleSubmit}>
             <label htmlFor="text" className="block font-medium mb-2 text-black">
-              Enter text:
+              enter text:
             </label>
             <textarea
               ref={textAreaRef}
               id="text"
               className={`w-full h-32 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[currentColor] resize-none text-black`}
-              placeholder="Where creativity begins. Type something..."
+              placeholder="where creativity begins. type something..."
               value={text}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={handleKeyDown}
@@ -345,13 +345,13 @@ export default function HomePage() {
                   ></path>
                 </svg>
               )}
-              {isLoading ? "Generating..." : "Generate Emoji"}
+              {isLoading ? "generating..." : "generate emoji"}
             </button>
           </form>
           {emoji && (
             <div className="mt-8">
               <h2 className="text-xl font-semibold mb-4 text-center">
-                How do you like this one?
+                how you like this one?
               </h2>
               <div
                 className="bg-gray-100 p-6 rounded-lg shadow flex flex-col items-center"
@@ -361,19 +361,19 @@ export default function HomePage() {
                 <div className="w-full">
                   <div className="flex items-center mb-2">
                     <span className="font-medium text-gray-600 mr-2">
-                      Unicode:
-                    </span>
-                    <span className="text-gray-800">{emoji.unicode}</span>
-                  </div>
-                  <div className="flex items-center mb-2">
-                    <span className="font-medium text-gray-600 mr-2">
-                      Description:
+                      name:
                     </span>
                     <span className="text-gray-800">{emoji.description}</span>
                   </div>
+                  <div className="flex items-center mb-2">
+                    <span className="font-medium text-gray-600 mr-2">
+                      unicode:
+                    </span>
+                    <span className="text-gray-800">{emoji.unicode}</span>
+                  </div>
                   <div className="flex items-center mb-4">
                     <span className="font-medium text-gray-600 mr-2">
-                      Color:
+                      color:
                     </span>
                     <span className="text-gray-800">{emoji.color}</span>
                     <span
@@ -406,7 +406,7 @@ export default function HomePage() {
                         d="M8 16l4-4 4 4m0 0l-4-4-4 4"
                       ></path>
                     </svg>
-                    Copy Emoji
+                    copy emoji
                   </button>
                 </div>
               </div>
