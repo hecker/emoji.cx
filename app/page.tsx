@@ -382,7 +382,7 @@ export default function HomePage() {
                     ></span>
                   </div>
                   <button
-                    className="w-full py-2 px-4 rounded text-white font-semibold flex items-center justify-center"
+                    className="w-full py-2 px-4 rounded text-white font-semibold flex items-center justify-center cursor-pointer"
                     onClick={() => handleCopy(emoji.emoji)}
                     style={{ backgroundColor: mainColor, color: textColor }}
                   >
