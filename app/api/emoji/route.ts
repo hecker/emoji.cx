@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "ft:gpt-4o-mini-2024-07-18:hecker-ventures::A7trA23i", // Ensure this model supports emojis
+        model: "ft:gpt-4.1-mini-2025-04-14:livy:text-to-emoji:BNKoNyF8", // Ensure this model supports emojis
         messages: [{ role: "user", content: prePrompt + prompt }],
         temperature: 0.5,
         max_tokens: 10, // Limit tokens to reduce chances of multiple emojis
