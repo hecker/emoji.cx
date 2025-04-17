@@ -45,7 +45,7 @@ function isColorLight(hexColor: string): boolean {
 export default function HomePage() {
   const [text, setText] = useState("");
   const [emoji, setEmoji] = useState<DisplayEmoji | null>(null);
-  const [emojiElements, setEmojiElements] = useState<JSX.Element[]>([]);
+  const [emojiElements, setEmojiElements] = useState<React.JSX.Element[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedEmoji, setCopiedEmoji] = useState<string | null>(null);
   const [notificationVisible, setNotificationVisible] = useState(false);
@@ -101,7 +101,7 @@ export default function HomePage() {
   // Generate background emojis when the emoji changes
   useEffect(() => {
     if (emoji) {
-      const elements: JSX.Element[] = [];
+      const elements: React.JSX.Element[] = [];
       const positions: { top: number; left: number; size: number }[] = [];
 
       const numEmojis = 20;
